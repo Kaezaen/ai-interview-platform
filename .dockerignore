@@ -1,0 +1,25 @@
+# Keep the build context small so the slim runtime stage stays slim.
+
+.git/
+.gitignore
+
+# Secrets must never enter an image layer.
+.env
+.env.*
+!.env.example
+
+# Local caches and virtualenvs — the image builds its own.
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Tooling and documentation are not needed at runtime.
+.claude/
+.github/
+docs/
+CLAUDE.md
+SETUP.md
+Makefile
