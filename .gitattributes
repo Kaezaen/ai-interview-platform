@@ -1,0 +1,19 @@
+# The toolchain runs on Linux inside containers, so line endings are pinned to LF
+# in both the repository and the working copy, regardless of the contributor's
+# platform or their core.autocrlf setting.
+#
+# This is not cosmetic:
+#   - CRLF in a .env file makes every value end in a stray \r, so APP_ENV becomes
+#     "development\r" and fails validation at startup.
+#   - CRLF breaks tab-indented recipes in a Makefile on Linux.
+#   - CRLF in a shell script gives "bad interpreter" errors in a container.
+
+* text=auto eol=lf
+
+# Binary files must never be converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
