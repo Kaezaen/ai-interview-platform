@@ -6,7 +6,7 @@ code that uses it would be invisible to autogenerate.
 """
 
 from app.models.enums import InterviewLevel, InterviewStatus
-from app.models.interview import Interview
+from app.models.interview import MAX_SKILLS, Interview
 from app.models.user import User
 
-__all__ = ["Interview", "InterviewLevel", "InterviewStatus", "User"]
+__all__ = ["MAX_SKILLS", "Interview", "InterviewLevel", "InterviewStatus", "User"]

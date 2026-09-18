@@ -8,7 +8,7 @@ from fastapi import FastAPI
 
 from app.api.errors import register_exception_handlers
 from app.api.middleware import RequestIDMiddleware
-from app.api.routers import auth, health
+from app.api.routers import auth, health, interviews
 from app.core.config import Settings, get_settings
 from app.db.session import dispose_engine, init_engine
 
@@ -24,6 +24,10 @@ TAGS_METADATA = [
     {
         "name": "auth",
         "description": "Registration, login, and the current user's profile.",
+    },
+    {
+        "name": "interviews",
+        "description": "Interview sessions. Every endpoint is scoped to the caller.",
     },
 ]
 
@@ -85,6 +89,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(auth.router)
+    app.include_router(interviews.router)
     return app
 
 

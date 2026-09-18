@@ -14,8 +14,10 @@ from app.core.exceptions import InvalidTokenError
 from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models import User
+from app.repositories.interview import InterviewRepository
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
+from app.services.interview import InterviewService
 
 # auto_error=False so that a missing or malformed Authorization header becomes
 # InvalidTokenError -> 401 in the usual envelope, rather than the bare 403 that
@@ -52,3 +54,11 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_interview_service(session: DbSession) -> InterviewService:
+    """Build the interview service for this request."""
+    return InterviewService(session, InterviewRepository(session))
+
+
+InterviewServiceDep = Annotated[InterviewService, Depends(get_interview_service)]
