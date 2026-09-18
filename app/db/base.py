@@ -43,6 +43,10 @@ class UUIDPrimaryKeyMixin:
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
+        # Mixin columns are appended last by default; these keep the primary key
+        # first and the timestamps last in the generated DDL, so "\d users" reads
+        # the way the table is actually thought about.
+        sort_order=-100,
     )
 
 
@@ -57,10 +61,12 @@ class TimestampMixin:
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
+        sort_order=100,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
+        sort_order=101,
     )
