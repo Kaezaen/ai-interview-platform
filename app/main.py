@@ -8,7 +8,7 @@ from fastapi import FastAPI
 
 from app.api.errors import register_exception_handlers
 from app.api.middleware import RequestIDMiddleware
-from app.api.routers import health
+from app.api.routers import auth, health
 from app.core.config import Settings, get_settings
 from app.db.session import dispose_engine, init_engine
 
@@ -20,6 +20,10 @@ TAGS_METADATA = [
     {
         "name": "health",
         "description": "Liveness and readiness probes used by Docker and orchestrators.",
+    },
+    {
+        "name": "auth",
+        "description": "Registration, login, and the current user's profile.",
     },
 ]
 
@@ -80,6 +84,7 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(health.router)
+    app.include_router(auth.router)
     return app
 
 
