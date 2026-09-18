@@ -3,17 +3,10 @@
 from fastapi import APIRouter, status
 
 from app.api.deps import AuthServiceDep, CurrentUser
+from app.api.errors import error_responses
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserRead
-from app.schemas.common import ErrorResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-_UNAUTHORIZED = {
-    status.HTTP_401_UNAUTHORIZED: {
-        "model": ErrorResponse,
-        "description": "Missing, invalid, or expired token",
-    }
-}
 
 
 @router.post(
@@ -21,12 +14,10 @@ _UNAUTHORIZED = {
     status_code=status.HTTP_201_CREATED,
     summary="Create an account",
     response_model=UserRead,
-    responses={
-        status.HTTP_409_CONFLICT: {
-            "model": ErrorResponse,
-            "description": "The email is already registered",
-        }
-    },
+    responses=error_responses(
+        status.HTTP_409_CONFLICT,
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+    ),
 )
 async def register(payload: RegisterRequest, auth: AuthServiceDep) -> UserRead:
     """Register a new account and return its public profile."""
@@ -38,12 +29,10 @@ async def register(payload: RegisterRequest, auth: AuthServiceDep) -> UserRead:
     "/login",
     summary="Exchange credentials for an access token",
     response_model=TokenResponse,
-    responses={
-        status.HTTP_401_UNAUTHORIZED: {
-            "model": ErrorResponse,
-            "description": "Wrong credentials, or the account is disabled",
-        }
-    },
+    responses=error_responses(
+        status.HTTP_401_UNAUTHORIZED,
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+    ),
 )
 async def login(payload: LoginRequest, auth: AuthServiceDep) -> TokenResponse:
     """Verify credentials and issue an access token."""
@@ -55,7 +44,10 @@ async def login(payload: LoginRequest, auth: AuthServiceDep) -> TokenResponse:
     "/me",
     summary="The current user",
     response_model=UserRead,
-    responses=_UNAUTHORIZED,
+    responses=error_responses(
+        status.HTTP_401_UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN,
+    ),
 )
 async def read_current_user(user: CurrentUser) -> UserRead:
     """Return the profile of the account the token belongs to."""

@@ -6,6 +6,7 @@ them into a response whose shape never varies.
 """
 
 import logging
+from typing import Any
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -44,6 +45,32 @@ _CODE_BY_STATUS: dict[int, str] = {
     status.HTTP_405_METHOD_NOT_ALLOWED: "METHOD_NOT_ALLOWED",
     status.HTTP_422_UNPROCESSABLE_ENTITY: "VALIDATION_ERROR",
 }
+
+
+#: What each documented failure means, so a router can say "this endpoint can
+#: return 404" without restating the envelope every time.
+_DESCRIPTION_BY_STATUS: dict[int, str] = {
+    status.HTTP_401_UNAUTHORIZED: "Missing, invalid, or expired token",
+    status.HTTP_403_FORBIDDEN: "The account is disabled",
+    status.HTTP_404_NOT_FOUND: "Not found, or not owned by the caller",
+    status.HTTP_409_CONFLICT: "Conflicts with something that already exists",
+    status.HTTP_422_UNPROCESSABLE_ENTITY: "The request failed validation",
+}
+
+
+def error_responses(*status_codes: int) -> dict[int | str, dict[str, Any]]:
+    """OpenAPI entries stating that these statuses use the error envelope.
+
+    Without this, FastAPI documents its own 422 shape, which is not what the
+    application actually returns.
+    """
+    return {
+        code: {
+            "model": ErrorResponse,
+            "description": _DESCRIPTION_BY_STATUS.get(code, "Error"),
+        }
+        for code in status_codes
+    }
 
 
 def _json_error(

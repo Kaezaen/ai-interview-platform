@@ -6,7 +6,8 @@ from typing import Annotated
 from fastapi import APIRouter, Query, status
 
 from app.api.deps import CurrentUser, InterviewServiceDep
-from app.schemas.common import ErrorResponse, Page
+from app.api.errors import error_responses
+from app.schemas.common import Page
 from app.schemas.interview import InterviewCreate, InterviewRead
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
@@ -16,12 +17,7 @@ router = APIRouter(prefix="/interviews", tags=["interviews"])
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 
-_UNAUTHORIZED = {
-    status.HTTP_401_UNAUTHORIZED: {
-        "model": ErrorResponse,
-        "description": "Missing, invalid, or expired token",
-    }
-}
+_AUTH_FAILURES = (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
 
 
 @router.post(
@@ -29,7 +25,7 @@ _UNAUTHORIZED = {
     status_code=status.HTTP_201_CREATED,
     summary="Create an interview",
     response_model=InterviewRead,
-    responses=_UNAUTHORIZED,
+    responses=error_responses(*_AUTH_FAILURES, status.HTTP_422_UNPROCESSABLE_ENTITY),
 )
 async def create_interview(
     payload: InterviewCreate,
@@ -50,7 +46,7 @@ async def create_interview(
     "",
     summary="List the current user's interviews",
     response_model=Page[InterviewRead],
-    responses=_UNAUTHORIZED,
+    responses=error_responses(*_AUTH_FAILURES, status.HTTP_422_UNPROCESSABLE_ENTITY),
 )
 async def list_interviews(
     user: CurrentUser,
@@ -72,13 +68,11 @@ async def list_interviews(
     "/{interview_id}",
     summary="Read one interview",
     response_model=InterviewRead,
-    responses={
-        **_UNAUTHORIZED,
-        status.HTTP_404_NOT_FOUND: {
-            "model": ErrorResponse,
-            "description": "No such interview for this user",
-        },
-    },
+    responses=error_responses(
+        *_AUTH_FAILURES,
+        status.HTTP_404_NOT_FOUND,
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+    ),
 )
 async def read_interview(
     interview_id: uuid.UUID,
