@@ -8,6 +8,7 @@ from fastapi import FastAPI
 
 from app.api.routers import health
 from app.core.config import Settings, get_settings
+from app.db.session import dispose_engine, init_engine
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +36,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
     logger.info("starting %s (env=%s)", settings.app_name, settings.app_env)
 
-    # Database and Redis connection pools are opened here on Day 2 and Day 4, and
-    # register their readiness probes via app.core.health.register_check().
+    # Opening the pool here rather than at import time keeps module imports free
+    # of side effects, and registers the database readiness probe. The Redis pool
+    # joins it on Day 4.
+    init_engine()
 
     yield
 
+    await dispose_engine()
     logger.info("shutdown complete")
 
 
