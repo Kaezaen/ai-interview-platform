@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api.errors import register_exception_handlers
+from app.api.middleware import RequestIDMiddleware
 from app.api.routers import health
 from app.core.config import Settings, get_settings
 from app.db.session import dispose_engine, init_engine
@@ -71,6 +73,12 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
     app.state.settings = settings
+
+    # The correlation id has to exist before anything can fail, so this is added
+    # first and therefore runs outermost.
+    app.add_middleware(RequestIDMiddleware)
+    register_exception_handlers(app)
+
     app.include_router(health.router)
     return app
 
