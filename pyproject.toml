@@ -37,7 +37,9 @@ package = false
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-src = ["app"]
+# The project root is a source root too, so that "app" is recognised as a
+# first-party package from files outside it, such as alembic/env.py.
+src = [".", "app"]
 
 [tool.ruff.lint]
 select = [
@@ -53,6 +55,11 @@ select = [
     "PTH", # flake8-use-pathlib
     "RUF", # ruff-specific rules
 ]
+
+[tool.ruff.lint.isort]
+# The migrations directory is named "alembic", which would otherwise make the
+# alembic library itself look like a first-party package.
+known-third-party = ["alembic"]
 
 [tool.ruff.format]
 quote-style = "double"

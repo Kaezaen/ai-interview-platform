@@ -18,6 +18,10 @@ services:
       # the repository on the host, not only in the container filesystem.
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
+      # make lint and make fmt run ruff inside this container, so its
+      # configuration has to be the file on the host, not the one baked into the
+      # image at build time.
+      - ./pyproject.toml:/app/pyproject.toml:ro
     depends_on:
       postgres:
         condition: service_healthy
