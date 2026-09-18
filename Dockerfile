@@ -32,6 +32,10 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
+# Migrations ship with the image: "alembic upgrade head" has to be runnable in
+# the same container that runs the application.
+COPY alembic.ini ./
+COPY alembic ./alembic
 COPY app ./app
 
 EXPOSE 8000
@@ -48,6 +52,8 @@ RUN groupadd --system --gid 1000 appuser \
 WORKDIR /app
 
 COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
+COPY --chown=appuser:appuser alembic.ini ./
+COPY --chown=appuser:appuser alembic ./alembic
 COPY --chown=appuser:appuser app ./app
 
 ENV PATH="/app/.venv/bin:$PATH" \
