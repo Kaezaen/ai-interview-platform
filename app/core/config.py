@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     # --- Security (required) -------------------------------------------------
     secret_key: str = Field(min_length=32)
 
+    # Long enough to cover a practice interview without a re-login, short enough
+    # that a leaked token expires on its own. There is no revocation list, so
+    # this lifetime is the only thing that limits a stolen token, and there is no
+    # refresh token yet — see README.
+    access_token_expire_minutes: int = Field(default=30, gt=0)
+
     # --- Backing services (required) -----------------------------------------
     database_url: str
     redis_url: str
