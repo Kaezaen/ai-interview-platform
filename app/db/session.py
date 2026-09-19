@@ -40,6 +40,12 @@ def init_engine() -> AsyncEngine:
         pool_pre_ping=True,
         pool_size=5,
         max_overflow=10,
+        # Bound parameters are kept out of exception messages, and therefore out
+        # of the traceback the unhandled-error handler logs. They carry the
+        # password hash on a failed INSERT into users, and will carry answer text
+        # once answers exist. The statement itself is still reported, which is
+        # what identifies the failure.
+        hide_parameters=True,
         connect_args={
             # Every outbound call gets an explicit timeout: a hung database must
             # surface as an error, never as a request that waits forever.
