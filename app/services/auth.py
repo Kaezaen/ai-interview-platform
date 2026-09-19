@@ -47,15 +47,18 @@ class AuthService:
         if await self._users.get_by_email(address) is not None:
             raise EmailAlreadyRegisteredError
 
-        user = await self._users.create(email=address, password_hash=hash_password(password))
+        password_hash = hash_password(password)
         try:
+            # create() flushes, so the INSERT — and therefore the unique
+            # violation — is raised here and not by commit(). Both calls belong
+            # inside the guard: two registrations for the same address can both
+            # pass the check above, and the constraint is what decides which one
+            # wins.
+            user = await self._users.create(email=address, password_hash=password_hash)
             await self._session.commit()
         except IntegrityError as error:
             await self._session.rollback()
-            # Two registrations for the same address can both pass the check
-            # above; the unique constraint is the guarantee, the check is only
-            # there to give the common case a clean answer.
-            if _EMAIL_UNIQUE_CONSTRAINT not in str(error.orig):
+            if not _violates_email_uniqueness(error):
                 raise
             raise EmailAlreadyRegisteredError from error
 
@@ -103,3 +106,21 @@ class AuthService:
 def _normalise_email(email: str) -> str:
     """Trim and lowercase an address, the form in which they are stored."""
     return email.strip().lower()
+
+
+def _violates_email_uniqueness(error: IntegrityError) -> bool:
+    """Report whether ``error`` is the users.email unique violation.
+
+    The constraint name is read from the driver exception, which asyncpg exposes
+    directly, rather than matched inside the server's message text: a substring
+    match would also fire on a future constraint whose name merely contains this
+    one. The text is only used as a fallback, so that an unexpected failure is
+    never silently reported as a duplicate email.
+    """
+    driver_error = getattr(error, "orig", None)
+    for candidate in (driver_error, getattr(driver_error, "__cause__", None)):
+        name = getattr(candidate, "constraint_name", None)
+        if name is not None:
+            return bool(name == _EMAIL_UNIQUE_CONSTRAINT)
+
+    return _EMAIL_UNIQUE_CONSTRAINT in str(driver_error)
