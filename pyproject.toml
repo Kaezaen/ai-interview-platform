@@ -4,12 +4,24 @@ version = "0.1.0"
 description = "AI-powered interview preparation and evaluation platform"
 requires-python = ">=3.12,<3.13"
 
-# Runtime dependencies are kept deliberately lean. Database, Redis, and AI SDK
-# dependencies are added on the day they are actually used, not up front.
+# Runtime dependencies are kept deliberately lean. Redis and AI SDK dependencies
+# are added on the day they are actually used, not up front.
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "pydantic-settings>=2.6.0",
+    # EmailStr validation lives in a separate package.
+    "pydantic[email]>=2.9.0",
+    # The asyncio extra pulls in greenlet, which the async engine needs.
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "alembic>=1.14.0",
+    # JWT encode/decode. PyJWT is minimal and actively maintained; python-jose
+    # drags in crypto backends this project never uses.
+    "pyjwt>=2.10.0",
+    # Argon2id: no 72-byte input limit, unlike bcrypt. Used directly rather than
+    # through passlib, which is unmaintained and breaks against bcrypt 4.x.
+    "argon2-cffi>=23.1.0",
 ]
 
 [dependency-groups]
@@ -25,7 +37,9 @@ package = false
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-src = ["app"]
+# The project root is a source root too, so that "app" is recognised as a
+# first-party package from files outside it, such as alembic/env.py.
+src = [".", "app"]
 
 [tool.ruff.lint]
 select = [
@@ -41,6 +55,11 @@ select = [
     "PTH", # flake8-use-pathlib
     "RUF", # ruff-specific rules
 ]
+
+[tool.ruff.lint.isort]
+# The migrations directory is named "alembic", which would otherwise make the
+# alembic library itself look like a first-party package.
+known-third-party = ["alembic"]
 
 [tool.ruff.format]
 quote-style = "double"

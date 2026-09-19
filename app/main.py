@@ -6,8 +6,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.routers import health
+from app.api.errors import register_exception_handlers
+from app.api.middleware import RequestIDMiddleware
+from app.api.routers import auth, health, interviews
 from app.core.config import Settings, get_settings
+from app.db.session import dispose_engine, init_engine
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +20,14 @@ TAGS_METADATA = [
     {
         "name": "health",
         "description": "Liveness and readiness probes used by Docker and orchestrators.",
+    },
+    {
+        "name": "auth",
+        "description": "Registration, login, and the current user's profile.",
+    },
+    {
+        "name": "interviews",
+        "description": "Interview sessions. Every endpoint is scoped to the caller.",
     },
 ]
 
@@ -35,11 +46,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
     logger.info("starting %s (env=%s)", settings.app_name, settings.app_env)
 
-    # Database and Redis connection pools are opened here on Day 2 and Day 4, and
-    # register their readiness probes via app.core.health.register_check().
+    # Opening the pool here rather than at import time keeps module imports free
+    # of side effects, and registers the database readiness probe. The Redis pool
+    # joins it on Day 4.
+    init_engine()
 
     yield
 
+    await dispose_engine()
     logger.info("shutdown complete")
 
 
@@ -67,7 +81,15 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
     app.state.settings = settings
+
+    # The correlation id has to exist before anything can fail, so this is added
+    # first and therefore runs outermost.
+    app.add_middleware(RequestIDMiddleware)
+    register_exception_handlers(app)
+
     app.include_router(health.router)
+    app.include_router(auth.router)
+    app.include_router(interviews.router)
     return app
 
 
