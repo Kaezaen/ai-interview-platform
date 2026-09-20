@@ -11,6 +11,7 @@ from app.api.middleware import RequestIDMiddleware
 from app.api.routers import auth, health, interviews
 from app.core.config import Settings, get_settings
 from app.db.session import dispose_engine, init_engine
+from app.services.ai.factory import get_ai_provider
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,10 @@ TAGS_METADATA = [
     },
     {
         "name": "interviews",
-        "description": "Interview sessions. Every endpoint is scoped to the caller.",
+        "description": (
+            "Interview sessions and their generated questions. Every endpoint is "
+            "scoped to the caller."
+        ),
     },
 ]
 
@@ -51,8 +55,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # joins it on Day 4.
     init_engine()
 
+    # Built here so that a misconfigured provider fails at boot rather than
+    # inside the first request that needs it, and so the client is not
+    # constructed while somebody is waiting on it.
+    provider = get_ai_provider()
+
     yield
 
+    await provider.aclose()
     await dispose_engine()
     logger.info("shutdown complete")
 
