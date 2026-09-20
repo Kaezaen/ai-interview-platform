@@ -15,6 +15,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.middleware import get_request_id
 from app.core.exceptions import (
+    AIError,
+    AIInvalidOutputError,
+    AIUnavailableError,
     AppError,
     EmailAlreadyRegisteredError,
     InactiveUserError,
@@ -33,6 +36,11 @@ _STATUS_BY_ERROR: dict[type[AppError], int] = {
     InvalidTokenError: status.HTTP_401_UNAUTHORIZED,
     InactiveUserError: status.HTTP_403_FORBIDDEN,
     InterviewNotFoundError: status.HTTP_404_NOT_FOUND,
+    # Listed one by one because the lookup below is by exact type: an entry
+    # for the base class alone would let both subclasses fall through to 500.
+    AIError: status.HTTP_503_SERVICE_UNAVAILABLE,
+    AIUnavailableError: status.HTTP_503_SERVICE_UNAVAILABLE,
+    AIInvalidOutputError: status.HTTP_503_SERVICE_UNAVAILABLE,
 }
 
 #: Codes for failures raised by the framework rather than by the domain, such as
@@ -55,6 +63,9 @@ _DESCRIPTION_BY_STATUS: dict[int, str] = {
     status.HTTP_404_NOT_FOUND: "Not found, or not owned by the caller",
     status.HTTP_409_CONFLICT: "Conflicts with something that already exists",
     status.HTTP_422_UNPROCESSABLE_ENTITY: "The request failed validation",
+    status.HTTP_503_SERVICE_UNAVAILABLE: (
+        "The AI provider is unavailable or returned unusable output"
+    ),
 }
 
 
