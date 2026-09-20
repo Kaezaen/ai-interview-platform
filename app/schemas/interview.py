@@ -6,12 +6,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
-from app.models import MAX_SKILLS, InterviewLevel, InterviewStatus
+from app.models import MAX_SKILLS, SKILL_MAX_LENGTH, InterviewLevel, InterviewStatus
 
 #: Long enough for "Senior Backend Engineer (Payments)", short enough to stay a
-#: job title rather than a description.
+#: job title rather than a description. SKILL_MAX_LENGTH is imported rather than
+#: repeated: it is also the length of the questions.skill column.
 POSITION_MAX_LENGTH = 120
-SKILL_MAX_LENGTH = 60
 
 Position = Annotated[
     str,
