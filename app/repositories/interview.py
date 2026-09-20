@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Interview, InterviewLevel
+from app.models import Interview, InterviewLevel, InterviewStatus
 
 
 class InterviewRepository:
@@ -53,6 +53,16 @@ class InterviewRepository:
             )
         )
         return result.scalar_one_or_none()
+
+    async def mark_questions_generated(self, interview: Interview) -> None:
+        """Record that this interview now has its questions.
+
+        The transition is a consequence of generating, not the thing that
+        guards it: idempotency is enforced by the unique constraint on
+        questions, which stays correct when later days move the status on.
+        """
+        interview.status = InterviewStatus.QUESTIONS_GENERATED
+        await self._session.flush()
 
     async def list_for_user(
         self,
