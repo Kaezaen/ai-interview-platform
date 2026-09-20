@@ -18,6 +18,9 @@ services:
       # the repository on the host, not only in the container filesystem.
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
+      # The test suite is not part of the image: it is mounted, so it never
+      # ships to production and never invalidates the application layer.
+      - ./tests:/app/tests
       # make lint and make fmt run ruff inside this container, so its
       # configuration has to be the file on the host, not the one baked into the
       # image at build time.
