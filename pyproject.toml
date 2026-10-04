@@ -22,12 +22,36 @@ dependencies = [
     # Argon2id: no 72-byte input limit, unlike bcrypt. Used directly rather than
     # through passlib, which is unmaintained and breaks against bcrypt 4.x.
     "argon2-cffi>=23.1.0",
+    # The unified Google Gen AI SDK. The older google-generativeai package is out
+    # of support and no longer receives security fixes; this one has the async
+    # client and the response-schema mode the provider needs.
+    "google-genai>=1.0.0",
 ]
 
 [dependency-groups]
 dev = [
     "ruff>=0.8.0",
+    "pytest>=8.3.0",
+    # anyio would also work, but pytest-asyncio's auto mode keeps the test files
+    # free of a decorator on every single coroutine.
+    "pytest-asyncio>=0.24.0",
+    # ASGITransport drives the application in-process: the tests exercise the
+    # real routing, dependencies and exception handlers without a live server.
+    "httpx>=0.28.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The project root is not a package, so pytest would otherwise only put tests/
+# on sys.path and "import app" would fail inside the container.
+pythonpath = ["."]
+# Every endpoint test here is a coroutine; marking each one individually adds
+# noise, and an omitted marker fails in a confusing way.
+asyncio_mode = "auto"
+# One event loop for the whole run. The connection pool is opened once by a
+# session fixture, and asyncpg connections cannot be shared across loops.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 
 [tool.uv]
 # This is an application, not a distributable library: there is nothing to build

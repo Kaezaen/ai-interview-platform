@@ -15,9 +15,13 @@ from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models import User
 from app.repositories.interview import InterviewRepository
+from app.repositories.question import QuestionRepository
 from app.repositories.user import UserRepository
+from app.services.ai.base import AIProvider
+from app.services.ai.factory import get_ai_provider
 from app.services.auth import AuthService
 from app.services.interview import InterviewService
+from app.services.question import QuestionService
 
 # auto_error=False so that a missing or malformed Authorization header becomes
 # InvalidTokenError -> 401 in the usual envelope, rather than the bare 403 that
@@ -62,3 +66,20 @@ def get_interview_service(session: DbSession) -> InterviewService:
 
 
 InterviewServiceDep = Annotated[InterviewService, Depends(get_interview_service)]
+
+# Routed through Depends rather than imported by the service, so a test can swap
+# the provider with app.dependency_overrides and never touch a network.
+AIProviderDep = Annotated[AIProvider, Depends(get_ai_provider)]
+
+
+def get_question_service(session: DbSession, ai: AIProviderDep) -> QuestionService:
+    """Build the question service for this request."""
+    return QuestionService(
+        session,
+        QuestionRepository(session),
+        InterviewRepository(session),
+        ai,
+    )
+
+
+QuestionServiceDep = Annotated[QuestionService, Depends(get_question_service)]

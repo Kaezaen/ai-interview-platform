@@ -30,6 +30,11 @@ _STATUS_ENUM = ENUM(
 #: the bound keeps a single row from growing without limit.
 MAX_SKILLS = 10
 
+#: Long enough for "Distributed Systems", short enough to stay a label. Shared
+#: with questions.skill so a generated skill can never exceed what a request may
+#: ask for, and with the request schema so the two cannot drift apart.
+SKILL_MAX_LENGTH = 60
+
 
 class Interview(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """One interview session belonging to exactly one user."""

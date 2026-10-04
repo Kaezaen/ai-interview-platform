@@ -65,3 +65,39 @@ class InterviewNotFoundError(AppError):
 
     code = "INTERVIEW_NOT_FOUND"
     message = "Interview tidak ditemukan"
+
+
+class AIError(AppError):
+    """Base class for every failure of the AI layer.
+
+    Subclasses separate "the provider did not answer" from "the provider
+    answered with something unusable", because only the first is worth retrying
+    and the two need different wording for the caller.
+    """
+
+    code = "AI_ERROR"
+    message = "Layanan AI sedang bermasalah"
+
+
+class AIUnavailableError(AIError):
+    """The provider could not be reached, timed out, or kept failing.
+
+    Raised after the bounded transport retry has been exhausted, and for any
+    vendor error that is not transient — a caller cannot act on the difference.
+    """
+
+    code = "AI_UNAVAILABLE"
+    message = "Layanan AI sedang tidak tersedia, coba lagi nanti"
+
+
+class AIInvalidOutputError(AIError):
+    """The provider answered, but the answer could not be trusted.
+
+    Covers unparseable JSON, output that fails the Pydantic schema, and output
+    that is well-formed but wrong about the request — the wrong number of
+    questions, a skill nobody asked for, duplicates. The offending output is
+    logged, never returned: it is unvalidated model text.
+    """
+
+    code = "AI_INVALID_OUTPUT"
+    message = "Layanan AI mengembalikan hasil yang tidak valid"
